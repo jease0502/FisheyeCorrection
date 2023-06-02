@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import glob
+import time
 
 class FishEyeCalibration(object):
     def __init__(self):
@@ -14,20 +15,31 @@ class FishEyeCalibration(object):
         self._img_shape = None
 
     def collect_images(self, num_images , camera_id = 0):
-        cap = cv2.VideoCapture(0)  # 使用电脑摄像头，参数为0
+        #cap = cv2.VideoCapture(0) 
+        cap = cv2.VideoCapture('''
+            nvarguscamerasrc sensor_id=0
+            ! video/x-raw(memory:NVMM), width=(int)1920, height=(int)1080, format=(string)NV12, framerate=(fraction)60/1
+            ! nvvidconv
+            ! video/x-raw, width=(int)360, height=(int)240, format=(string)BGRx
+            ! videoconvert
+            ! appsink
+	''', cv2.CAP_GSTREAMER)
         checkerboard = self.point
         count = 0
 
         while count < num_images:
+            t1 = time.time()
             ret, frame = cap.read()
+            print("1 time" , time.time()-t1)
             self._img_shape = frame.shape[:2]
             if not ret:
                 break
             frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
+            t1 = time.time()
             ret, corners = cv2.findChessboardCorners(frame_gray, checkerboard, cv2.CALIB_CB_ADAPTIVE_THRESH
                                                      + cv2.CALIB_CB_FAST_CHECK + cv2.CALIB_CB_NORMALIZE_IMAGE)
-            if ret:
+            print("2 time" , time.time()-t1)
+            if ret :
                 self.objpoints.append(self.objp)
                 cv2.cornerSubPix(frame_gray,corners,(3,3),(-1,-1),self.subpix_criteria)
                 self.imgpoints.append(corners)
@@ -35,6 +47,7 @@ class FishEyeCalibration(object):
                 # print("Images collected: ", count)
             cv2.putText(frame, "Images collected: {}".format(count), (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
                         (0, 0, 255), 2)
+            print(frame.shape)
             cv2.imshow("Frame", frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -70,12 +83,6 @@ if __name__ == '__main__':
     calibration = FishEyeCalibration()
     calibration.collect_images(num_images=300 , camera_id=0)
     DIM, K, D = calibration.get_K_and_D()
-    np.save('C1_DIM.npy', DIM)
-    np.save('C1_K.npy', K)
-    np.save('C1_D.npy', D)
-    calibration = FishEyeCalibration()
-    calibration.collect_images(num_images=300 , camera_id=1)
-    DIM, K, D = calibration.get_K_and_D()
-    np.save('C2_DIM.npy', DIM)
-    np.save('C2_K.npy', K)
-    np.save('C2_D.npy', D)
+    np.save('DIM.npy', DIM)
+    np.save('K.npy', K)
+    np.save('D.npy', D)
