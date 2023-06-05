@@ -9,28 +9,21 @@ class FishEyeCalibration(object):
         self.objp = np.zeros((1, self.point[0]*self.point[1], 3), np.float32)
         self.objp[0,:,:2] = np.mgrid[0:self.point[0], 0:self.point[1]].T.reshape(-1, 2)
         self.subpix_criteria = (cv2.TERM_CRITERIA_EPS+cv2.TERM_CRITERIA_MAX_ITER, 30, 0.1)
-        self.calibration_flags = cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC+cv2.fisheye.CALIB_CHECK_COND+cv2.fisheye.CALIB_FIX_SKEW
+        self.calibration_flags = cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC+cv2.fisheye.CALIB_FIX_SKEW
         self.objpoints = []
         self.imgpoints = []
         self._img_shape = None
 
     def collect_images(self, num_images , camera_id = 0):
         #cap = cv2.VideoCapture(0) 
-        cap = cv2.VideoCapture('''
-            nvarguscamerasrc sensor_id=0
-            ! video/x-raw(memory:NVMM), width=(int)1920, height=(int)1080, format=(string)NV12, framerate=(fraction)60/1
-            ! nvvidconv
-            ! video/x-raw, width=(int)360, height=(int)240, format=(string)BGRx
-            ! videoconvert
-            ! appsink
-	''', cv2.CAP_GSTREAMER)
+        cap = cv2.VideoCapture(camera_id, cv2.CAP_GSTREAMER)
         checkerboard = self.point
         count = 0
 
         while count < num_images:
             t1 = time.time()
             ret, frame = cap.read()
-            print("1 time" , time.time()-t1)
+            #print("1 time" , time.time()-t1)
             self._img_shape = frame.shape[:2]
             if not ret:
                 break
@@ -38,7 +31,7 @@ class FishEyeCalibration(object):
             t1 = time.time()
             ret, corners = cv2.findChessboardCorners(frame_gray, checkerboard, cv2.CALIB_CB_ADAPTIVE_THRESH
                                                      + cv2.CALIB_CB_FAST_CHECK + cv2.CALIB_CB_NORMALIZE_IMAGE)
-            print("2 time" , time.time()-t1)
+            #print("2 time" , time.time()-t1)
             if ret :
                 self.objpoints.append(self.objp)
                 cv2.cornerSubPix(frame_gray,corners,(3,3),(-1,-1),self.subpix_criteria)
@@ -47,7 +40,7 @@ class FishEyeCalibration(object):
                 # print("Images collected: ", count)
             cv2.putText(frame, "Images collected: {}".format(count), (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
                         (0, 0, 255), 2)
-            print(frame.shape)
+            #print(frame.shape)
             cv2.imshow("Frame", frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -81,8 +74,28 @@ class FishEyeCalibration(object):
        
 if __name__ == '__main__':
     calibration = FishEyeCalibration()
-    calibration.collect_images(num_images=300 , camera_id=0)
+    calibration.collect_images(num_images=300 , camera_id='''
+            nvarguscamerasrc sensor_id=0
+            ! video/x-raw(memory:NVMM), width=(int)1920, height=(int)1080, format=(string)NV12, framerate=(fraction)60/1
+            ! nvvidconv
+            ! video/x-raw, width=(int)360, height=(int)240, format=(string)BGRx
+            ! videoconvert
+            ! appsink
+	''')
     DIM, K, D = calibration.get_K_and_D()
     np.save('DIM.npy', DIM)
     np.save('K.npy', K)
     np.save('D.npy', D)
+    calibration2 = FishEyeCalibration()
+    calibration2.collect_images(num_images=300 , camera_id='''
+            nvarguscamerasrc sensor_id=1
+            ! video/x-raw(memory:NVMM), width=(int)1920, height=(int)1080, format=(string)NV12, framerate=(fraction)60/1
+            ! nvvidconv
+            ! video/x-raw, width=(int)360, height=(int)240, format=(string)BGRx
+            ! videoconvert
+            ! appsink
+	''')
+    DIM, K, D = calibration.get_K_and_D()
+    np.save('2DIM.npy', DIM)
+    np.save('2K.npy', K)
+    np.save('2D.npy', D)
