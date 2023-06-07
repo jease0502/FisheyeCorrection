@@ -56,9 +56,9 @@ class FishEyeCalibration(object):
         cv2.destroyAllWindows()
         loc_dt = datetime.datetime.today() 
         loc_dt_format = loc_dt.strftime("%Y_%m_%d_%H_%M_%S")
-
         ca = camera_id.split("sensor_id=")[1].split("\n")[0]
         os.makedirs(os.path.join("calibration_images",ca + "_" + loc_dt_format), exist_ok=True)
+	print(os.path.join("calibration_images",ca + "_" + loc_dt_format)
         for i, element in enumerate(video_frame):
             cv2.imwrite(os.path.join(os.path.join("calibration_images",ca + "_" + loc_dt_format) , str(i)) + ".jpg", element)
 
