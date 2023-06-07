@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 import glob
 import time
+import os
+import datetime
 
 class FishEyeCalibration(object):
     def __init__(self):
@@ -19,6 +21,7 @@ class FishEyeCalibration(object):
         cap = cv2.VideoCapture(camera_id, cv2.CAP_GSTREAMER)
         checkerboard = self.point
         count = 0
+        video_frame = []
 
         while count < num_images:
             t1 = time.time()
@@ -37,8 +40,10 @@ class FishEyeCalibration(object):
                 cv2.cornerSubPix(frame_gray,corners,(3,3),(-1,-1),self.subpix_criteria)
                 self.imgpoints.append(corners)
                 count += 1
+                video_frame.append(frame)
+
                 # print("Images collected: ", count)
-            cv2.putText(frame, "Images collected: {}".format(count), (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+            cv2.putText(frame, "Images collected: {} / 500".format(count), (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
                         (0, 0, 255), 2)
             #print(frame.shape)
             cv2.imshow("Frame", frame)
@@ -47,6 +52,13 @@ class FishEyeCalibration(object):
         self.gray = frame_gray
         cap.release()
         cv2.destroyAllWindows()
+        
+        loc_dt = datetime.datetime.today() 
+        loc_dt_format = loc_dt.strftime("%Y_%m_%d_%H_%M_%S")
+        os.makedirs(os.path.join("calibration_images",loc_dt_format), exist_ok=True)
+        num_images.split("sensor_id=")[1].split("\n")[0]
+        for i, element in enumerate(video_frame):
+            cv2.imwrite(os.path.join(os.path.join("calibration_images",num_images + "_" + loc_dt_format) , str(i)), element)
 
     def get_K_and_D(self):
         N_OK = len(self.objpoints)
@@ -65,16 +77,16 @@ class FishEyeCalibration(object):
         self.calibration_flags,
         (cv2.TERM_CRITERIA_EPS+cv2.TERM_CRITERIA_MAX_ITER, 30, 1e-6)
     )
-        DIM = self._img_shape[::-1]
-        print("Found " + str(N_OK) + " valid images for calibration")
-        print("DIM=" + str(self._img_shape[::-1]))
-        print("K=np.array(" + str(K.tolist()) + ")")
-        print("D=np.array(" + str(D.tolist()) + ")")
-        return DIM, K, D
+        # DIM = self._img_shape[::-1]
+        # print("Found " + str(N_OK) + " valid images for calibration")
+        # print("DIM=" + str(self._img_shape[::-1]))
+        # print("K=np.array(" + str(K.tolist()) + ")")
+        # print("D=np.array(" + str(D.tolist()) + ")")
+        # return DIM, K, D
        
 if __name__ == '__main__':
     calibration = FishEyeCalibration()
-    calibration.collect_images(num_images=300 , camera_id='''
+    calibration.collect_images(num_images=500 , camera_id='''
             nvarguscamerasrc sensor_id=0
             ! video/x-raw(memory:NVMM), width=(int)1920, height=(int)1080, format=(string)NV12, framerate=(fraction)60/1
             ! nvvidconv
@@ -82,12 +94,12 @@ if __name__ == '__main__':
             ! videoconvert
             ! appsink
 	''')
-    DIM, K, D = calibration.get_K_and_D()
-    np.save('DIM.npy', DIM)
-    np.save('K.npy', K)
-    np.save('D.npy', D)
+    # DIM, K, D = calibration.get_K_and_D()
+    # np.save('DIM.npy', DIM)
+    # np.save('K.npy', K)
+    # np.save('D.npy', D)
     calibration2 = FishEyeCalibration()
-    calibration2.collect_images(num_images=300 , camera_id='''
+    calibration2.collect_images(num_images=500 , camera_id='''
             nvarguscamerasrc sensor_id=1
             ! video/x-raw(memory:NVMM), width=(int)1920, height=(int)1080, format=(string)NV12, framerate=(fraction)60/1
             ! nvvidconv
@@ -95,7 +107,7 @@ if __name__ == '__main__':
             ! videoconvert
             ! appsink
 	''')
-    DIM, K, D = calibration.get_K_and_D()
-    np.save('2DIM.npy', DIM)
-    np.save('2K.npy', K)
-    np.save('2D.npy', D)
+    # DIM, K, D = calibration.get_K_and_D()
+    # np.save('2DIM.npy', DIM)
+    # np.save('2K.npy', K)
+    # np.save('2D.npy', D)
