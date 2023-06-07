@@ -4,6 +4,7 @@ import glob
 import time
 import os
 import datetime
+import copy
 
 class FishEyeCalibration(object):
     def __init__(self):
@@ -36,11 +37,12 @@ class FishEyeCalibration(object):
                                                      + cv2.CALIB_CB_FAST_CHECK + cv2.CALIB_CB_NORMALIZE_IMAGE)
             #print("2 time" , time.time()-t1)
             if ret :
+                video_frame.append(copy.deepcopy(frame))
                 self.objpoints.append(self.objp)
                 cv2.cornerSubPix(frame_gray,corners,(3,3),(-1,-1),self.subpix_criteria)
                 self.imgpoints.append(corners)
                 count += 1
-                video_frame.append(frame)
+                
 
                 # print("Images collected: ", count)
             cv2.putText(frame, "Images collected: {} / 500".format(count), (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
@@ -52,13 +54,13 @@ class FishEyeCalibration(object):
         self.gray = frame_gray
         cap.release()
         cv2.destroyAllWindows()
-        
         loc_dt = datetime.datetime.today() 
         loc_dt_format = loc_dt.strftime("%Y_%m_%d_%H_%M_%S")
-        os.makedirs(os.path.join("calibration_images",loc_dt_format), exist_ok=True)
-        num_images.split("sensor_id=")[1].split("\n")[0]
+
+        ca = camera_id.split("sensor_id=")[1].split("\n")[0]
+        os.makedirs(os.path.join("calibration_images",ca + "_" + loc_dt_format), exist_ok=True)
         for i, element in enumerate(video_frame):
-            cv2.imwrite(os.path.join(os.path.join("calibration_images",num_images + "_" + loc_dt_format) , str(i)), element)
+            cv2.imwrite(os.path.join(os.path.join("calibration_images",ca + "_" + loc_dt_format) , str(i)) + ".jpg", element)
 
     def get_K_and_D(self):
         N_OK = len(self.objpoints)
