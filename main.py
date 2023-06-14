@@ -92,7 +92,7 @@ if __name__ == '__main__':
             nvarguscamerasrc sensor_id=0
             ! video/x-raw(memory:NVMM), width=(int)1920, height=(int)1080, format=(string)NV12, framerate=(fraction)60/1
             ! nvvidconv
-            ! video/x-raw, width=(int)360, height=(int)240, format=(string)BGRx
+            ! video/x-raw, width=(int)1920, height=(int)1080, format=(string)BGRx
             ! videoconvert
             ! appsink
 	''')
@@ -105,7 +105,7 @@ if __name__ == '__main__':
             nvarguscamerasrc sensor_id=1
             ! video/x-raw(memory:NVMM), width=(int)1920, height=(int)1080, format=(string)NV12, framerate=(fraction)60/1
             ! nvvidconv
-            ! video/x-raw, width=(int)360, height=(int)240, format=(string)BGRx
+            ! video/x-raw, width=(int)1920, height=(int)1080, format=(string)BGRx
             ! videoconvert
             ! appsink
 	''')
